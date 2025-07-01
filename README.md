@@ -3,7 +3,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](https://github.com/bocaletto-luca/LogWatch)
 
-LogWatch is an enterprise-grade daemon that tails log files, applies regex rules to detect patterns or errors, dispatches alerts via Slack or Email, and exposes Prometheus-style metrics over HTTP.
+LogWatch is an enterprise-grade daemon that tails multiple log files with seamless rotation support, applies dynamic regex rules loaded from JSON/YAML, and dispatches alerts via Slack or email with built-in rate limiting and deduplication. It exposes Prometheus-style metrics, supports custom plugins, robust logging, graceful shutdown, and retry-backoff for fault resilience.
 
 ---
 
