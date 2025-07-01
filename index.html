@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LogWatch – Enterprise Log Monitoring & Alerting Daemon</title>
+  <meta name="description" content="LogWatch tails multiple log files, applies dynamic regex rules, dispatches alerts via Slack or Email with rate-limiting and deduplication, and exposes Prometheus-style metrics.">
+  <meta name="keywords" content="LogWatch, log monitoring, log alerting, regex rules, Prometheus metrics, Slack alerts, email alerts, Python daemon">
+  <meta name="author" content="Bocaletto Luca">
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 960px; margin: 40px auto; line-height: 1.6; color: #333; }
+    h1, h2, h3 { color: #222; }
+    nav ul { list-style: none; padding: 0; }
+    nav li { margin: 6px 0; }
+    pre { background: #f4f4f4; padding: 12px; overflow-x: auto; }
+    code { background: #f4f4f4; padding: 2px 4px; font-family: monospace; }
+    a { color: #0066cc; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .btn { display: inline-block; margin: 16px 0; padding: 10px 16px; background: #333; color: #fff; border-radius: 4px; text-decoration: none; }
+    footer { margin-top: 60px; font-size: 0.9em; border-top: 1px solid #ddd; padding-top: 12px; }
+    hr { border: none; border-top: 1px solid #ddd; margin: 40px 0; }
+  </style>
+</head>
+<body>
+
+  <h1>LogWatch</h1>
+  <p>#### Author: Bocaletto Luca</p>
+  <p>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="GPL v3 License"></a>
+    <a href="#"><img src="https://img.shields.io/badge/version-1.1.0-green.svg" alt="Version 1.1.0"></a>
+  </p>
+
+  <a class="btn" href="https://github.com/bocaletto-luca/LogWatch" target="_blank">Source Code</a>
+
+  <nav>
+    <h2>Table of Contents</h2>
+    <ul>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#prerequisites">Prerequisites</a></li>
+      <li><a href="#installation">Installation</a></li>
+      <li><a href="#configuration">Configuration</a></li>
+      <li><a href="#usage">Usage</a></li>
+      <li><a href="#configuration-reference">Configuration Reference</a></li>
+      <li><a href="#metrics-endpoint">Metrics Endpoint</a></li>
+      <li><a href="#logging">Logging</a></li>
+      <li><a href="#contributing">Contributing</a></li>
+      <li><a href="#license">License</a></li>
+      <li><a href="#author">Author</a></li>
+    </ul>
+  </nav>
+
+  <hr>
+
+  <h2 id="overview">Overview</h2>
+  <p>LogWatch is an enterprise-grade daemon that tails multiple log files with seamless rotation support, applies dynamic regex rules loaded from JSON/YAML, and dispatches alerts via Slack or email with built-in rate limiting and deduplication. It exposes Prometheus-style metrics, supports custom plugins, robust logging, graceful shutdown, and retry-backoff for fault resilience.</p>
+
+  <hr>
+
+  <h2 id="features">Features</h2>
+  <ul>
+    <li>Dynamic loading and reloading of rules (JSON/YAML) without restarting</li>
+    <li>Multi-file tailing with seamless rotation support</li>
+    <li>Rate-limiting and duplicate suppression per rule</li>
+    <li>Plug-in architecture for alert handlers (Slack, SMTP, custom)</li>
+    <li>Asynchronous, low-latency processing with <code>asyncio</code></li>
+    <li>Exposed Prometheus-compatible metrics over HTTP</li>
+    <li>Robust logging with daily file rotation and adjustable verbosity</li>
+    <li>Graceful shutdown on SIGINT/SIGTERM with task cleanup</li>
+    <li>Retry/backoff logic for transient alert delivery errors</li>
+    <li>Schema-validated configuration using Pydantic</li>
+  </ul>
+
+  <hr>
+
+  <h2 id="prerequisites">Prerequisites</h2>
+  <ul>
+    <li>Python 3.8 or newer</li>
+    <li>IMAP/SMTP credentials (if using the email plugin)</li>
+    <li>Slack API token & channel (if using the Slack plugin)</li>
+    <li>GPG for PGP support (optional)</li>
+    <li>A terminal or container environment supporting Python</li>
+  </ul>
+
+  <hr>
+
+  <h2 id="installation">Installation</h2>
+  <pre><code>git clone https://github.com/bocaletto-luca/LogWatch.git
+cd LogWatch
+pip install -r requirements.txt
+chmod +x logwatchd.py</code></pre>
+
+  <hr>
+
+  <h2 id="configuration">Configuration</h2>
+  <p>Create or edit a <code>config.yaml</code> in the repository root:</p>
+  <pre><code>log_paths:
+  - /var/log/nginx/access.log
+  - /var/log/app/app.log
+
+rule_dir: ./rules
+
+check_interval: 0.5
+
+alert:
+  rate_limit: 60
+  dedupe_window: 300
+
+slack:
+  token: xoxb-XXXXXXXXXXXX
+  channel: alerts
+
+email:
+  smtp_server: smtp.example.com
+  smtp_port: 587
+  username: user@example.com
+  password: secret
+  sender: alerts@example.com
+  recipients:
+    - oncall@example.com
+
+metrics:
+  enabled: true
+  host: 0.0.0.0
+  port: 8000
+
+log_file: logwatchd.log
+debug: false</code></pre>
+
+  <hr>
+
+  <h2 id="usage">Usage</h2>
+  <pre><code>./logwatchd.py --config config.yaml</code></pre>
+  <p>Command-line options:</p>
+  <ul>
+    <li><code>-c, --config</code> Path to configuration file (default: <code>config.yaml</code>)</li>
+    <li><code>--debug</code> Enable debug-level logging</li>
+  </ul>
+  <p>Run LogWatch as a long-lived process. Press <strong>Ctrl+C</strong> to shut down gracefully.</p>
+
+  <hr>
+
+  <h2 id="configuration-reference">Configuration Reference</h2>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+    <tr><td><code>log_paths</code></td><td>list</td><td>Paths of log files to monitor</td></tr>
+    <tr><td><code>rule_dir</code></td><td>string</td><td>Directory containing rule files</td></tr>
+    <tr><td><code>check_interval</code></td><td>float</td><td>Seconds between file reads</td></tr>
+    <tr><td><code>alert</code></td><td>object</td><td>Rate-limit/dedupe defaults for all rules</td></tr>
+    <tr><td><code>slack</code></td><td>object</td><td>Slack plugin config (token, channel)</td></tr>
+    <tr><td><code>email</code></td><td>object</td><td>Email plugin config (SMTP details, recipients)</td></tr>
+    <tr><td><code>metrics</code></td><td>object</td><td>Metrics server config (enabled, host, port)</td></tr>
+    <tr><td><code>log_file</code></td><td>string</td><td>Path for rotated log output</td></tr>
+    <tr><td><code>debug</code></td><td>boolean</td><td>Toggle debug logging</td></tr>
+  </table>
+
+  <hr>
+
+  <h2 id="metrics-endpoint">Metrics Endpoint</h2>
+  <p>If enabled, visit <code>http://<host>:<port>/metrics</code> to retrieve Prometheus metrics:</p>
+  <pre><code>logwatchd_lines_processed 12345
+logwatchd_rules_matched   67
+logwatchd_alerts_sent     12</code></pre>
+  <p>Configure Prometheus scrape:</p>
+  <pre><code>- job_name: 'logwatchd'
+  static_configs:
+    - targets: ['localhost:8000']</code></pre>
+
+  <hr>
+
+  <h2 id="logging">Logging</h2>
+  <ul>
+    <li>Console output at INFO (or DEBUG with <code>--debug</code>)</li>
+    <li>Daily rotated log files (<code>log_file</code>) retained for 7 days</li>
+  </ul>
+
+  <hr>
+
+  <h2 id="contributing">Contributing</h2>
+  <p>Contributions are welcome! Fork the repo, create a feature branch, write tests, update docs, and submit a PR. Follow <a href="https://peps.python.org/pep-0008/">PEP 8</a>.</p>
+
+  <hr>
+
+  <h2 id="license">License</h2>
+  <p>This project is licensed under the <strong>GNU GPL v3</strong>. See <a href="LICENSE">LICENSE</a> for details.</p>
+
+  <hr>
+
+  <h2 id="author">Author</h2>
+  <p>Bocaletto Luca<br>
+     <a href="https://bocaletto-luca.github.io">Website</a> · 
+     <a href="https://github.com/bocaletto-luca">GitHub</a> · 
+     <a href="https://bocalettoluca.altervista.org">Portfolio</a></p>
+
+  <footer>
+    &copy; 2025 Bocaletto Luca · Licensed under GPL v3 · 
+    <a href="https://bocaletto-luca.github.io">Site</a> · 
+    <a href="https://github.com/bocaletto-luca">GitHub</a> · 
+    <a href="https://bocalettoluca.altervista.org">Portfolio</a>
+  </footer>
+</body>
+</html>
